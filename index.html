@@ -83,54 +83,69 @@
         </div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
-    <script>
-        function loadVideo(videoId, url) {
-            const video = document.getElementById(videoId);
-            if (Hls.isSupported()) {
-                const hls = new Hls();
-                hls.loadSource(url);
-                hls.attachMedia(video);
-            } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
-                video.src = url;
+<script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+<script>
+    const hlsInstances = {}; // 存储每个video的HLS实例
+
+    function loadVideo(videoId, url) {
+        const video = document.getElementById(videoId);
+        if (Hls.isSupported()) {
+            if (hlsInstances[videoId]) {
+                hlsInstances[videoId].destroy();
             }
+            const hls = new Hls();
+            hlsInstances[videoId] = hls;
+            hls.loadSource(url);
+            hls.attachMedia(video);
+            hls.on(Hls.Events.MANIFEST_PARSED, () => {
+                video.play().catch(console.error);
+            });
+        } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+            video.src = url;
+            video.play().catch(console.error);
+        }
+    }
+
+    function updateSrc(videoId, url) {
+        const video = document.getElementById(videoId);
+        if (!url) return;
+
+        // 销毁旧实例
+        if (hlsInstances[videoId]) {
+            hlsInstances[videoId].destroy();
+            delete hlsInstances[videoId];
         }
 
-        function updateSrc(videoId, url) {
-            const video = document.getElementById(videoId);
-            if (Hls.isSupported()) {
-                const hls = new Hls();
-                hls.destroy(); // 销毁之前的实例
-                hls.loadSource(url);
-                hls.attachMedia(video);
-            } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
-                video.src = url;
-            }
+        if (Hls.isSupported()) {
+            const hls = new Hls();
+            hlsInstances[videoId] = hls;
+            hls.loadSource(url);
+            hls.attachMedia(video);
+            hls.on(Hls.Events.MANIFEST_PARSED, () => {
+                video.play().catch(console.error);
+            });
+        } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+            video.src = url;
+            video.play().catch(console.error);
         }
+    }
 
-        // 初始化播放器并设置静音
-        window.onload = function() {
-            loadVideo('video1', 'https://d2vnbkvjbims7j.cloudfront.net/containerA/LTN/playlist_512k.m3u8');
-            loadVideo('video2', 'https://english-livebkali.cgtn.com/live/encgtn_3.m3u8');
-            loadVideo('video3', 'https://mediacorp-videosbclive.akamaized.net/f4abbc22204c49e2b337203b0ebbf14b/ap-southeast-1/6057994443001/profile_3/chunklist.m3u8');
-            loadVideo('video4', 'https://live-hls-web-aje-fa.getaj.net/AJE/06.m3u8');
-        };
+    // 初始化播放器
+    window.onload = function() {
+        loadVideo('video1', 'https://d2vnbkvjbims7j.cloudfront.net/containerA/LTN/playlist_512k.m3u8');
+        loadVideo('video2', 'https://english-livebkali.cgtn.com/live/encgtn_3.m3u8');
+        loadVideo('video3', 'https://mediacorp-videosbclive.akamaized.net/f4abbc22204c49e2b337203b0ebbf14b/ap-southeast-1/6057994443001/profile_3/chunklist.m3u8');
+        loadVideo('video4', 'https://live-hls-web-aje-fa.getaj.net/AJE/06.m3u8');
+    };
 
-        // 监听鼠标悬停事件和触摸事件
-        document.querySelectorAll('.player-container').forEach(container => {
-            container.addEventListener('mouseenter', () => {
-                container.classList.add('hover');
-            });
-            container.addEventListener('mouseleave', () => {
-                container.classList.remove('hover');
-            });
-            container.addEventListener('touchstart', () => {
-                container.classList.add('touch');
-            });
-            container.addEventListener('touchend', () => {
-                container.classList.remove('touch');
-            });
-        });
-    </script>
+    // 事件监听保持不变
+    document.querySelectorAll('.player-container').forEach(container => {
+        container.addEventListener('mouseenter', () => container.classList.add('hover'));
+        container.addEventListener('mouseleave', () => container.classList.remove('hover'));
+        container.addEventListener('touchstart', () => container.classList.add('touch'));
+        container.addEventListener('touchend', () => container.classList.remove('touch'));
+    });
+</script>
+
 </body>
 </html>
